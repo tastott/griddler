@@ -21,17 +21,17 @@ export class CellResolver {
 				{Group: sequence.length * 2, Length: slack}
 			]
 			.concat(sequence.map((x,i) => ({
-				Group: (i * 2) + 1,
+				Group: ((i+1) * 2) - 1,
 				Length: x
 			})))
-			.concat(sequence.slice(-1).map((x, i) => ({
-				Group: i + 1,
+			.concat(sequence.slice(1).map((x, i) => ({
+				Group: (i+1) * 2,
 				Length: slack + 1
 			})))
 			.sort((a,b) => a.Group - b.Group)
 			.map(g => g.Length);
 	}
-	
+
 	public InitializeLine(): CellState[] {
 		
 		var cells : CellState[] = [];
@@ -84,5 +84,56 @@ export class CellResolver {
 		return result;
 	}
 	
-	
+	public ReevaluateCell(current: CellState, adjacent: CellState, adjacentIsBefore: boolean): CellState {
+		var result = new CellState();
+		current.GetItems().forEach(item => {
+			var groupLength = this.groupLengths[item.Group];
+			
+			if(adjacentIsBefore){
+				//Filled: previous item in group, or, if first item, any item in preceding empty group
+				if(item.Group % 2 == 1){
+					if(item.Item > 0){
+						if(adjacent.Has(item.Group, item.Item-1)) result.Add(item.Group, item.Item);
+					}
+					else if(adjacent.HasGroup(item.Group-1)) {
+						result.Add(item.Group, item.Item);
+					}
+				}
+				//Empty: previous item in group or, if first item, last item in preceding filled group
+				else {
+					if(item.Item > 0){
+						if(adjacent.Has(item.Group, item.Item-1)) result.Add(item.Group, item.Item);
+					}
+					else {
+						var previousGroupLength = this.groupLengths[item.Group-1];
+						if(previousGroupLength !== undefined && adjacent.Has(item.Group-1, previousGroupLength-1)){
+							result.Add(item.Group, item.Item);
+						}
+					}
+				}
+			}
+			else {
+				//Filled: next item in group, or, if last item, first item in following empty group
+				if(item.Group % 2 == 1){
+					if(item.Item < groupLength-1){
+						if(adjacent.Has(item.Group, item.Item+1)) result.Add(item.Group, item.Item);
+					}
+					else if(adjacent.Has(item.Group+1, 0)) {
+						result.Add(item.Group, item.Item);
+					}
+				}
+				//Empty: next item in group or first item in next filled group
+				else {
+					if(item.Item < groupLength-1){
+						if(adjacent.Has(item.Group, item.Item+1)) result.Add(item.Group, item.Item);
+					}
+					if(adjacent.Has(item.Group+1, 0)){
+						result.Add(item.Group, item.Item);
+					}
+				}
+			}
+		})	
+		
+		return result;
+	}
 }

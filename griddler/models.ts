@@ -30,6 +30,14 @@ export class CellState {
 		return this;
 	}
 	
+	public Has(group: number, item: number): boolean {
+		return this.state[group] !== undefined && this.state[group][item];
+	}
+	
+	public HasGroup(group: number): boolean {
+		return this.state[group] !== undefined;
+	}
+	
 	public GetGroups():number[]{
 		return Object.keys(this.state).map(s => parseInt(s));
 	}
