@@ -1,0 +1,21 @@
+{
+  "name": "griddler",
+  "version": "0.0.0",
+  "author": "author",
+  "main": "index.html",
+  "scripts": {
+    "build": "tsc -p ./",
+    "test": "npm run build && node_modules\\.bin\\mocha --recursive",
+    "start": "node_modules/.bin/nw ./"
+  },
+  "devDependencies": {
+    "chai": "^3.4.1",
+    "mocha": "^2.3.4"
+  },
+  "dependencies": {
+    "angular": "^1.4.8",
+    "angular-route": "^1.4.8",
+    "bootstrap": "^3.3.6",
+    "nw": "^0.12.3"
+  }
+}
