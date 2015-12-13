@@ -1,3 +1,4 @@
+let clone = require('clone')
 
 export enum CellFillState {
 	Unknown,
@@ -25,9 +26,14 @@ export class CellState {
 		return this;
 	}
 	
-	public RemoveGroup(group:number): CellState {
+	public RemoveGroup(group:number) {
 		delete this.state[group];
 		return this;
+	}
+	
+	public RemoveItem(group:number, item:number){
+		delete this.state[group][item];
+		if(!Object.keys(this.state[group]).length) delete this.state[group];
 	}
 	
 	public Has(group: number, item: number): boolean {
@@ -79,6 +85,12 @@ export class CellState {
 			.filter(g => g % 2 != remainder);
 			
 		groupsToRemove.forEach(g => this.RemoveGroup(g));
+	}
+	
+	public Clone(): CellState {
+		var cloned = new CellState();
+		cloned.state = clone(this.state);
+		return cloned;
 	}
 }
 

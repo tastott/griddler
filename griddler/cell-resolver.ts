@@ -3,8 +3,11 @@ import {CellState} from './models'
 export class CellResolver {
 	
 	private groupLengths: number[];
+	public Slack: number;
 	
-	constructor(sequence:number[], private lineLength: number){
+	constructor(sequence:number[], 
+		private lineLength: number,
+		private debugMode: boolean = false){
 		if(!sequence.length) throw new Error('Sequence must contain at least one block')
 		if(lineLength < 1) throw new Error('Line length must be positive')
 		
@@ -13,12 +16,12 @@ export class CellResolver {
 		
 		if(minimumGroupLength > lineLength) throw new Error(`Insufficient line length. Required: ${minimumGroupLength}. Actual: ${lineLength}`);
 		
-		let slack = lineLength - minimumGroupLength;
+		this.Slack = lineLength - minimumGroupLength;
 		
 		this.groupLengths = 
 			[
-				{Group: 0, Length: slack},
-				{Group: sequence.length * 2, Length: slack}
+				{Group: 0, Length: this.Slack},
+				{Group: sequence.length * 2, Length: this.Slack}
 			]
 			.concat(sequence.map((x,i) => ({
 				Group: ((i+1) * 2) - 1,
@@ -26,10 +29,12 @@ export class CellResolver {
 			})))
 			.concat(sequence.slice(1).map((x, i) => ({
 				Group: (i+1) * 2,
-				Length: slack + 1
+				Length: this.Slack + 1
 			})))
 			.sort((a,b) => a.Group - b.Group)
 			.map(g => g.Length);
+			
+		if(this.debugMode) console.log(`Group lengths: ${this.groupLengths.join(', ')}`);
 	}
 
 	public InitializeLine(): CellState[] {
@@ -84,30 +89,29 @@ export class CellResolver {
 		return result;
 	}
 	
-	public ReevaluateCell(current: CellState, adjacent: CellState, adjacentIsBefore: boolean): CellState {
-		var result = new CellState();
-		current.GetItems().forEach(item => {
+	public ReevaluateCell(current: CellState, adjacent: CellState, adjacentIsBefore: boolean): void{
+		var invalidItems = current.GetItems().filter(item => {
 			var groupLength = this.groupLengths[item.Group];
 			
 			if(adjacentIsBefore){
 				//Filled: previous item in group, or, if first item, any item in preceding empty group
 				if(item.Group % 2 == 1){
 					if(item.Item > 0){
-						if(adjacent.Has(item.Group, item.Item-1)) result.Add(item.Group, item.Item);
+						if(adjacent.Has(item.Group, item.Item-1)) return false;
 					}
 					else if(adjacent.HasGroup(item.Group-1)) {
-						result.Add(item.Group, item.Item);
+						return false;
 					}
 				}
 				//Empty: previous item in group or, if first item, last item in preceding filled group
 				else {
 					if(item.Item > 0){
-						if(adjacent.Has(item.Group, item.Item-1)) result.Add(item.Group, item.Item);
+						if(adjacent.Has(item.Group, item.Item-1)) return false;
 					}
 					else {
 						var previousGroupLength = this.groupLengths[item.Group-1];
 						if(previousGroupLength !== undefined && adjacent.Has(item.Group-1, previousGroupLength-1)){
-							result.Add(item.Group, item.Item);
+							return false;
 						}
 					}
 				}
@@ -116,24 +120,26 @@ export class CellResolver {
 				//Filled: next item in group, or, if last item, first item in following empty group
 				if(item.Group % 2 == 1){
 					if(item.Item < groupLength-1){
-						if(adjacent.Has(item.Group, item.Item+1)) result.Add(item.Group, item.Item);
+						if(adjacent.Has(item.Group, item.Item+1)) return false;
 					}
 					else if(adjacent.Has(item.Group+1, 0)) {
-						result.Add(item.Group, item.Item);
+						return false;
 					}
 				}
 				//Empty: next item in group or first item in next filled group
 				else {
 					if(item.Item < groupLength-1){
-						if(adjacent.Has(item.Group, item.Item+1)) result.Add(item.Group, item.Item);
+						if(adjacent.Has(item.Group, item.Item+1)) return false;
 					}
 					if(adjacent.Has(item.Group+1, 0)){
-						result.Add(item.Group, item.Item);
+						return false;
 					}
 				}
 			}
+			
+			return true;
 		})	
 		
-		return result;
+		invalidItems.forEach(item => current.RemoveItem(item.Group, item.Item));
 	}
 }

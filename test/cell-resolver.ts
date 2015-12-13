@@ -44,6 +44,17 @@ describe('Cell Resolver', () => {
 
 			expect(actual).to.be.deep.equal(expected);
 		})
+		
+		it('Should initialize another line correctly', () => {
+			let sequence = [1, 2, 2, 1];
+			let resolver = new CellResolver(sequence, 10);
+			let expected8 = new CellState().Add(5,0).Add(5,1).Add(6,0).Add(6,1).Add(7,0);
+			let expected9 = new CellState().Add(7,0).Add(8,0);
+
+			let actual = resolver.InitializeLine();
+			expect(actual[8]).to.be.deep.equal(expected8);
+			expect(actual[9]).to.be.deep.equal(expected9);
+		})
 	})
 	
 	describe('Reevaluate', () => {
@@ -53,7 +64,8 @@ describe('Cell Resolver', () => {
 			let adjacent = new CellState().Add(2,0).Add(2,1).Add(2,2);
 			let expected = new CellState().Add(2,1).Add(2,2).Add(3,0);
 			
-			expect(resolver.ReevaluateCell(current, adjacent, true)).to.be.deep.equal(expected);
+			resolver.ReevaluateCell(current, adjacent, true);
+			expect(current).to.be.deep.equal(expected);
 		})
 		
 		it('Backwards', () => {
@@ -62,7 +74,8 @@ describe('Cell Resolver', () => {
 			let adjacent = new CellState().Add(5,0).Add(6,0).Add(6,1);
 			let expected = new CellState().Add(4,0).Add(4,1).Add(5,0).Add(6,0);
 			
-			expect(resolver.ReevaluateCell(current, adjacent, false)).to.be.deep.equal(expected);
+			resolver.ReevaluateCell(current, adjacent, false);
+			expect(current).to.be.deep.equal(expected);	
 		})
 	})
 })
