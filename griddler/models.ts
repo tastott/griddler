@@ -16,16 +16,36 @@ export class CellState {
 		this.state = {};
 	}
 	
-	public Add(group: number, item: number){
+	public Add(group: number, item: number) : CellState{
 		if(!this.state[group]){
 			this.state[group] = {};
 		}
 		
 		this.state[group][item] = true;
+		return this;
+	}
+	
+	public RemoveGroup(group:number): CellState {
+		delete this.state[group];
+		return this;
 	}
 	
 	public GetGroups():number[]{
 		return Object.keys(this.state).map(s => parseInt(s));
+	}
+	
+	public GetItems(): {Group: number; Item: number;}[] {
+		var items : {Group: number; Item: number;}[] = [];
+		
+		this.GetGroups().forEach(g => {
+			Object.keys(this.state[g])
+				.map(s => parseInt(s))
+				.forEach(i => {
+					items.push({Group: g, Item: i})
+				})
+		})
+		
+		return items;
 	}
 	
 	public GetFillState(): CellFillState {
