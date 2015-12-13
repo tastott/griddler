@@ -72,4 +72,17 @@ export class CellState {
 		else if(empty == 0) return CellFillState.Filled;
 		else return CellFillState.Unknown;
 	}
+	
+	public SetFillState(filled: boolean) {
+		let remainder = filled ? 1 : 0;
+		let groupsToRemove = this.GetGroups()
+			.filter(g => g % 2 != remainder);
+			
+		groupsToRemove.forEach(g => this.RemoveGroup(g));
+	}
+}
+
+export interface Griddler {
+	rows: number[][];
+	columns: number[][];
 }
