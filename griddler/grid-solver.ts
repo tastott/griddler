@@ -17,10 +17,26 @@ enum ReevaluationDirection {
 	Backwards
 }
 
+class Coordinates {
+	constructor(public Axis: Axis, public A: number, public B: number){
+		
+	}
+	
+	Rotate(): Coordinates {
+		return new Coordinates(this.Axis == Axis.Horizontal ? Axis.Vertical : Axis.Horizontal,
+			this.B,
+			this.A
+		);
+	}
+	
+	Increment(direction: ReevaluationDirection): Coordinates {
+		let nextIndex = this.A + (direction == ReevaluationDirection.Forwards ? 1 : -1);
+		return new Coordinates(this.Axis, nextIndex, this.B);
+	}
+}
+
 interface QueueItem {
-	SourceAxis: Axis;
-	ThisAxisIndex: number;
-	OtherAxisIndex: number;
+	Coordinates: Coordinates;
 	Direction?: ReevaluationDirection;
 }
 
@@ -34,22 +50,31 @@ export class GridSolver {
 	constructor(griddler: Griddler) {
 		this.columns = this.InitializeLines(griddler.columns, griddler.rows.length);
 		this.rows = this.InitializeLines(griddler.rows, griddler.columns.length);
+		this.queue = [];
 		
 		//To begin with, all lines need to be back-solved from the last cell
 		this.columns.forEach((column, colIndex) => {
 			this.queue.push({
-				SourceAxis: Axis.Vertical,
-				ThisAxisIndex: griddler.rows.length - 1,
-				OtherAxisIndex: colIndex,
+				Coordinates: new Coordinates(Axis.Vertical,
+					griddler.rows.length - 1,
+					colIndex
+				),
 				Direction: ReevaluationDirection.Backwards
 			})
+			
+			//Reevaluate in other axis if fill state is known already
+			let fillState: CellFillState;
+			if((fillState = column.Cells.slice(-1)[0].GetFillState()) != CellFillState.Empty){
+				
+			}
 		})
 
 		this.rows.forEach((row, rowIndex) => {
 			this.queue.push({
-				SourceAxis: Axis.Horizontal,
-				OtherAxisIndex: rowIndex,
-				ThisAxisIndex: griddler.columns.length - 1,
+				Coordinates: new Coordinates(Axis.Horizontal,
+					rowIndex,
+					griddler.columns.length - 1
+				),
 				Direction: ReevaluationDirection.Backwards
 			})
 		})
@@ -74,57 +99,34 @@ export class GridSolver {
 		}
 	}
 
-	private GetNextCell(axis: Axis,
-		thisAxisIndex: number,
-		otherAxisIndex: number,
-		direction: ReevaluationDirection): { Index: number; Cell: CellState; Resolver: CellResolver } {
+	private GetCell(coordinates: Coordinates): { Cell: CellState; Resolver: CellResolver } {
 
-		let nextIndex = thisAxisIndex + (direction == ReevaluationDirection.Forwards ? 1 : -1);
-		let cell = this.GetCell(axis, nextIndex, otherAxisIndex);
-
-		if (cell) {
-			return {
-				Index: nextIndex,
-				Cell: cell.Cell,
-				Resolver: cell.Resolver
-			}
-		}
-		else {
-			return null;
-		}
-	}
-
-	private GetCell(axis: Axis,
-		thisAxisIndex: number,
-		otherAxisIndex: number): { Cell: CellState; Resolver: CellResolver } {
-
-		let lines = axis == Axis.Horizontal ? this.rows : this.columns;
-		let line = lines[otherAxisIndex];
+		let lines = coordinates.Axis == Axis.Horizontal ? this.rows : this.columns;
+		let line = lines[coordinates.B];
 		
 		//Cell doesn't exist
-		if (thisAxisIndex < 0 || thisAxisIndex >= line.Cells.length) return null;
+		if (coordinates.A < 0 || coordinates.A >= line.Cells.length) return null;
 
 		return {
-			Cell: line.Cells[thisAxisIndex],
+			Cell: line.Cells[coordinates.A],
 			Resolver: line.Resolver
 		};
 	}
 
 	private ProcessQueueItem(item: QueueItem): QueueItem[] {
 		//Get next cell, return early if we've reached the end of the line
-		var nextCell = this.GetNextCell(item.SourceAxis, item.ThisAxisIndex, item.OtherAxisIndex, item.Direction);
+		var nextCoords = item.Coordinates.Increment(item.Direction);
+		var nextCell = this.GetCell(item.Coordinates);
 		if (!nextCell) return [];
 		
 		//Reevaluate next cell
-		var thisCell = this.GetCell(item.SourceAxis, item.ThisAxisIndex, item.OtherAxisIndex);
+		var thisCell = this.GetCell(item.Coordinates);
 		var nextCellNewState = nextCell.Resolver.ReevaluateCell(nextCell.Cell, thisCell.Cell, item.Direction == ReevaluationDirection.Forwards);
 		
 		//Continue re-evaluation if state has changed
 		if (!deepEqual(nextCell.Cell, nextCellNewState)) {
 			let newItems: QueueItem[] = [{
-				SourceAxis: item.SourceAxis,
-				ThisAxisIndex: nextCell.Index,
-				OtherAxisIndex: item.OtherAxisIndex,
+				Coordinates: nextCoords,
 				Direction: item.Direction
 			}];
 				
@@ -132,8 +134,8 @@ export class GridSolver {
 			let newFillState: CellFillState;
 			if (nextCell.Cell.GetFillState() == CellFillState.Unknown
 				&& (newFillState = nextCellNewState.GetFillState()) != CellFillState.Unknown) {
-				let otherAxis = item.SourceAxis == Axis.Horizontal ? Axis.Vertical : Axis.Horizontal;
-				let otherAxisCell = this.GetCell(otherAxis, item.OtherAxisIndex, nextCell.Index);
+				let otherAxisCoords = item.Coordinates.Rotate();
+				let otherAxisCell = this.GetCell(otherAxisCoords);
 				
 				//Remove invalid groups from cell in other axis and re-evaluate in both directions
 				otherAxisCell.Cell.SetFillState(newFillState == CellFillState.Filled);
@@ -142,9 +144,7 @@ export class GridSolver {
 					.forEach(direction => {
 
 						newItems.push({
-							SourceAxis: otherAxis,
-							ThisAxisIndex: item.OtherAxisIndex,
-							OtherAxisIndex: nextCell.Index,
+							Coordinates: otherAxisCoords,
 							Direction: direction
 						})
 
