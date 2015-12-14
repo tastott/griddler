@@ -5,6 +5,7 @@ import hc = require('./controllers/home')
 
 angular.module('griddler', ['ngRoute'])
 	.controller('homeController', hc.HomeController)
+	.directive('griddler', () => new hc.GriddlerDirective())
 	.config(['$routeProvider', ($routeProvider: angular.route.IRouteProvider) => {
 	
 			$routeProvider.when('/home', {
