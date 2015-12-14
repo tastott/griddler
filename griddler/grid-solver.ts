@@ -68,6 +68,16 @@ export class GridSolver {
 
 		this.queue = this.GetInitialQueueItems(this.columns, griddler.rows.length, Axis.Vertical)
 			.concat(this.GetInitialQueueItems(this.rows, griddler.columns.length, Axis.Horizontal));
+			
+		//Use any hints
+		if(griddler.hints){
+			griddler.hints.forEach(hint => {
+				let coords = new Coordinates(Axis.Horizontal, hint.x, hint.y);
+				let otherCoords = coords.Rotate();
+				this.queue = this.queue.concat(this.SetFillState(coords, CellFillState.Filled));
+				this.queue = this.queue.concat(this.SetFillState(otherCoords, CellFillState.Filled));
+			})
+		}
 	}
 
 	private InitializeLines(sequences: number[][], lineLength: number): GridLine[] {

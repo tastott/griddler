@@ -97,4 +97,8 @@ export class CellState {
 export interface Griddler {
 	rows: number[][];
 	columns: number[][];
+	hints?: {
+		x: number;
+		y: number;
+	}[];
 }
