@@ -1,17 +1,18 @@
-div[griddler] td {
-	width: 10px;
-	height: 10px;
-	border: solid black 1px;
+div[griddler] td.cell {
+	width: 20px;
+	height: 20px;
+	text-align: center;
 }
 
-div[griddler] td {
+div[griddler] table.grid td.cell {
+	border: solid black 1px;
 	background-color: gray;
 }
 
-div[griddler] td.fill-state-filled {
+div[griddler] table.grid td.fill-state-filled {
 	background-color: black;
 }
 
-div[griddler] td.fill-state-empty {
+div[griddler] table.grid td.fill-state-empty {
 	background-color: white;
 }
