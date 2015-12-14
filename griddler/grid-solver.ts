@@ -62,7 +62,7 @@ export class GridSolver {
 
 	private queue: QueueItem[];
 
-	constructor(griddler: Griddler) {
+	constructor(griddler: Griddler, private onCellSolved?:(x:number, y:number, filled: boolean) => void) {
 		this.columns = this.InitializeLines(griddler.columns, griddler.rows.length);
 		this.rows = this.InitializeLines(griddler.rows, griddler.columns.length);
 
@@ -198,6 +198,8 @@ export class GridSolver {
 		let cell = this.GetCell(coords);
 		cell.Cell.SetFillState(newFillState == CellFillState.Filled);
 
+		if(this.onCellSolved) this.onCellSolved(xy.X, xy.Y, newFillState == CellFillState.Filled);
+		
 		return [ReevaluationDirection.Forwards, ReevaluationDirection.Backwards]
 			.map(direction => ({
 				Coordinates: coords,

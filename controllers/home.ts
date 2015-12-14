@@ -22,6 +22,9 @@ export interface GriddlerDirectiveScope extends ng.IScope {
 
 export class GriddlerDirective implements ng.IDirective {
 
+	private puzzle: Griddler;
+	private $element: JQuery;
+	
     public scope = {
        	puzzle: '='
     }
@@ -57,16 +60,24 @@ export class GriddlerDirective implements ng.IDirective {
 	}
 	
     public link = ($scope: GriddlerDirectiveScope, element: JQuery, attributes: ng.IAttributes) => {
+		this.$element = $(element);
+		
+		element.html('');
+		this.puzzle = $scope.puzzle;
 
 		if($scope.puzzle) {
-			let solver = new GridSolver($scope.puzzle);
-			let result = solver.Solve();
-		
+			
+			
 			let $container = $('<table></table>').appendTo(element);
 			let $containerTopRow = $('<tr></tr>').appendTo($container);
 			let $containerBottomRow = $('<tr></tr>').appendTo($container);
 		
 			let $controlArea = $('<td></td>').appendTo($containerTopRow);
+			$('<button>Solve</button>').appendTo($controlArea)
+				.click(() => this.Solve());
+				
+			$('<button>Solve in slo-mo</button>').appendTo($controlArea)
+				.click(() => this.Solve(true));
 		
 			this.drawClues($('<td></td>').appendTo($containerTopRow), $scope.puzzle.columns, false);
 			this.drawClues($('<td></td>').appendTo($containerBottomRow), $scope.puzzle.rows, true);
@@ -83,25 +94,39 @@ export class GriddlerDirective implements ng.IDirective {
 						.attr('id', `${cIndex}-${rIndex}`);
 				})
 			})
+		}
+	}
+	
+	private Solve(slomo: boolean = false) {
 		
-			for (var y = 0; y < result[0].length; y++) {
-				let cssClass: string;
-				for (var x = 0; x < result.length; x++) {
-					switch(result[x][y]){
-						case CellFillState.Unknown:
-							cssClass = 'fill-state-unknown'; break;
-						case CellFillState.Empty:
-							cssClass = 'fill-state-empty'; break;
-						case CellFillState.Filled:
-							cssClass = 'fill-state-filled'; break;
-					}
-					
-					$(`#${x}-${y}`).addClass(cssClass);
-				}
+		this.$element.find('table.grid td.cell').each(function() {
+			$(this).removeClass('fill-state-filled')
+				.removeClass('fill-state-empty')
+		})
+		
+		let solvedCells: {x:number;y:number;filled:boolean}[] = [];
+		let solver = new GridSolver(this.puzzle, 
+			(x,y,filled) => {
+				solvedCells.push({x: x, y: y, filled: filled});
+			});
+		
+		solver.Solve();
+		
+		let interval = 25;
+		
+		function showNextSolvedCell(){
+			if(solvedCells.length){
+				let cell = solvedCells.shift();
+				let fillCell = () => {
+					$(`#${cell.x}-${cell.y}`).addClass(cell.filled ? 'fill-state-filled' : 'fill-state-empty');
+					showNextSolvedCell();
+				};
+				
+				if(slomo) setTimeout(fillCell, interval);
+				else fillCell();
 			}
 		}
 		
-		
-        
+		showNextSolvedCell();
     }
 }
