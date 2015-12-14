@@ -1,6 +1,7 @@
 ///<reference path="../typings/angularjs/angular.d.ts" />
 import {CellFillState, Griddler} from '../griddler/models'
 import {GridSolver} from '../griddler/grid-solver'
+import $ = require('jquery')
 
 export interface HomeScope extends ng.IScope {
 	Message : string;
@@ -30,22 +31,29 @@ export class GriddlerDirective implements ng.IDirective {
 			let solver = new GridSolver($scope.puzzle);
 			let result = solver.Solve();
 		
-		
+			let $table = $('<table></table>').appendTo(element);
+			$scope.puzzle.rows.forEach((row, rIndex) => {
+				let $row = $('<tr></tr>').appendTo($table);
+				$scope.puzzle.columns.forEach((column, cIndex) => {
+					$('<td></td>').appendTo($row)
+						.attr('id', `${cIndex}-${rIndex}`);
+				})
+			})
 		
 			for (var y = 0; y < result[0].length; y++) {
-				var row: string[] = [];
+				let cssClass: string;
 				for (var x = 0; x < result.length; x++) {
 					switch(result[x][y]){
 						case CellFillState.Unknown:
-							row.push('?'); break;
+							cssClass = 'fill-state-unknown'; break;
 						case CellFillState.Empty:
-							row.push(' '); break;
+							cssClass = 'fill-state-empty'; break;
 						case CellFillState.Filled:
-							row.push('X'); break;
+							cssClass = 'fill-state-filled'; break;
 					}
+					
+					$(`#${x}-${y}`).addClass(cssClass);
 				}
-				
-				console.log(row.join(''));
 			}
 		}
 		

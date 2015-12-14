@@ -1,0 +1,17 @@
+div[griddler] td {
+	width: 10px;
+	height: 10px;
+	border: solid black 1px;
+}
+
+div[griddler] td {
+	background-color: gray;
+}
+
+div[griddler] td.fill-state-filled {
+	background-color: black;
+}
+
+div[griddler] td.fill-state-empty {
+	background-color: white;
+}
