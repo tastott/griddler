@@ -5,19 +5,23 @@
   "main": "index.html",
   "scripts": {
     "build": "tsc -p ./",
+    "browserify": "node_modules\\.bin\\browserify angular-app.js -o angular-app-browserify.js",
     "test": "npm run build && node_modules\\.bin\\mocha --recursive",
-    "start": "node_modules/.bin/nw ./"
+    "start": "npm run build && npm run browserify && node_modules\\.bin\\http-server -o -c-1",
+    "startw": "start cmd /c tsc -p . -w && start cmd /c node_modules\\.bin\\watchify angular-app.js -o angular-app-browserify.js -v && start cmd /c node_modules\\.bin\\http-server -o -c-1"
   },
   "devDependencies": {
+    "browserify": "^12.0.1",
     "chai": "^3.4.1",
-    "mocha": "^2.3.4"
+    "http-server": "^0.8.5",
+    "mocha": "^2.3.4",
+    "watchify": "^3.6.1"
   },
   "dependencies": {
     "angular": "^1.4.8",
     "angular-route": "^1.4.8",
     "bootstrap": "^3.3.6",
     "clone": "^1.0.2",
-    "deep-equal": "^1.0.1",
-    "nw": "^0.12.3"
+    "deep-equal": "^1.0.1"
   }
 }
